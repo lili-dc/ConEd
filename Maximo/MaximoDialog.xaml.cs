@@ -58,7 +58,7 @@ namespace Maximo.AddIns
         private void populateStore(string reqType)
         {
            
-            if (reqType == "above")
+            if (reqType == "underground")
             {
                 string[] abovePriorities = { "1", "2", "3", "4", "5", "6", "7", "9" };
                 string[] aboveSections = { "High/Immediate Action Reqd, (i.e. Cat 1/Cat 2/ENV/Safety/SEC)", "Outage Required", "CM- corrective mtce- Large work scope", "All repetitive work such as Compliances and PMs", "CM- Corrective mtce- small work scope- minor in nature", "CM contractor support required", "WORK FOR OTHERS", "Not Prioritized" };
@@ -207,9 +207,9 @@ namespace Maximo.AddIns
 
             QueryTask queryTask;
             if (reqType=="")
-                queryTask = new QueryTask(aboveUrl+"/0");
+                queryTask = new QueryTask(underUrl + "/0");
             else
-                queryTask = new QueryTask(underUrl+"/0");
+                queryTask = new QueryTask(aboveUrl+ "/0");
 
             queryTask.ExecuteCompleted += QueryTask_ExecuteCompleted;
             queryTask.Failed += QueryTask_Failed;
@@ -225,9 +225,9 @@ namespace Maximo.AddIns
             query.Where = "1=1";
 
             if (reqType == "")
-                queryTask.ExecuteAsync(query, "above");
-            else
                 queryTask.ExecuteAsync(query, "underground");
+            else
+                queryTask.ExecuteAsync(query, "above");
         }
 
         private void QueryTask_ExecuteCompleted(object sender, ESRI.ArcGIS.Client.Tasks.QueryEventArgs args)
@@ -258,13 +258,13 @@ namespace Maximo.AddIns
                 cntTable.Add(priorityGroup.Key.Priority + priorityGroup.Key.Status, priorityGroup.Count());
             }
 
-            if ((args.UserState as string) == "above")
+            if ((args.UserState as string) == "underground")
             {
-                populateStore("above");
-                loadData("underground");
+                populateStore("underground");
+                loadData("above");
             }
             else
-                populateStore("underground");
+                populateStore("above");
 
             Debug.WriteLine("Done");
         }
