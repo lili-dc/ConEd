@@ -24,8 +24,7 @@ namespace Maximo.AddIns
         List<Data> dgSource = new List<Data>();
         private Dictionary<string, Graphic> towers = new Dictionary<string, Graphic>();
         Dictionary<string, int> cntTable = new Dictionary<string, int>();
-        string aboveUrl = "";
-        string underUrl = ""; 
+        string tableUrl = "";
         int rowIdx = 0;
         int wpTotal = 0;
         int ipTotal = 0;
@@ -42,7 +41,7 @@ namespace Maximo.AddIns
         void myDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
         {
             Data d = e.Row.DataContext as Data;
-            if (d.Section == "UT/EHV" || d.Section == "TLM")
+            if (d.Section == "UT/EHV" || d.Section == "TLM" || d.Section == "TLM-O&R (EHV)")
             {
                 //e.Row.Background = new SolidColorBrush(Colors.LightGray);
                 e.Row.FontWeight = FontWeights.Bold;
@@ -92,7 +91,8 @@ namespace Maximo.AddIns
                     data.wpCnt = wpCnt.ToString();
                     data.ipCnt = ipCnt.ToString();
                     data.total = total.ToString();
-                    dgSource.Add(data);
+                    if (wpCnt != 0 || ipCnt != 0)
+                        dgSource.Add(data);
                     sumWPCnt += wpCnt;
                     sumIPCnt += ipCnt;
                     sumTotal += total;
@@ -124,7 +124,7 @@ namespace Maximo.AddIns
                     idx++;
                 }
             }
-            else
+            else if (reqType == "above")
             {
                 string[] underPriorities = { "1", "2", "3", "4", "5", "9" };
                 string[] underSections = { "High/Immediate Action Reqd, (i.e. Cat 1/Cat 2/ENV/Safety/SEC)", "Work Requiring Completion within 7 Days", "Completion Within 30 Days (Summer Load Constraints and CMSEA)", "All repetitive work such as Compliances and PMs", "Non-Critical, Follow-up or Non-Emergency Repair/Maint with no Time Constraints", "Not Prioritized" };
@@ -159,7 +159,76 @@ namespace Maximo.AddIns
                     data.wpCnt = wpCnt.ToString();
                     data.ipCnt = ipCnt.ToString();
                     data.total = total.ToString();
-                    dgSource.Add(data);
+                    if (wpCnt != 0 || ipCnt != 0)
+                        dgSource.Add(data);
+                    sumWPCnt += wpCnt;
+                    sumIPCnt += ipCnt;
+                    sumTotal += total;
+                    if (p == "3")
+                    {
+                        data = new Data();
+                        data.Section = "High Priority Total";
+                        data.wpCnt = sumWPCnt.ToString();
+                        data.ipCnt = sumIPCnt.ToString();
+                        data.total = sumTotal.ToString();
+                        dgSource.Add(data);
+                        sumWPCnt = 0;
+                        sumIPCnt = 0;
+                        sumTotal = 0;
+                    }
+
+                    if (p == "9")
+                    {
+                        data = new Data();
+                        data.Section = "Low Priority Total";
+                        data.wpCnt = sumWPCnt.ToString();
+                        data.ipCnt = sumIPCnt.ToString();
+                        data.total = sumTotal.ToString();
+                        dgSource.Add(data);
+                        sumWPCnt = 0;
+                        sumIPCnt = 0;
+                        sumTotal = 0;
+                    }
+                    idx++;
+                }
+            }
+            else if (reqType == "O&R")
+            {
+                string[] underPriorities = { "1", "2", "3", "4", "5", "9" };
+                string[] underSections = { "High/Immediate Action Reqd, (i.e. Cat 1/Cat 2/ENV/Safety/SEC)", "Work Requiring Completion within 7 Days", "Completion Within 30 Days (Summer Load Constraints and CMSEA)", "All repetitive work such as Compliances and PMs", "Non-Critical, Follow-up or Non-Emergency Repair/Maint with no Time Constraints", "Not Prioritized" };
+
+                Data data = new Data();
+                data.Section = "TLM-O&R (EHV)";
+                dgSource.Add(data);
+
+                int sumWPCnt = 0;
+                int sumIPCnt = 0;
+                int sumTotal = 0;
+                int idx = 0;
+                foreach (string p in underPriorities)
+                {
+                    data = new Data();
+                    data.Priority = p;
+                    data.Section = underSections[idx];
+                    int wpCnt = 0;
+                    int ipCnt = 0;
+                    int total = 0;
+                    if (cntTable.ContainsKey(p + "WAPPR"))
+                        wpCnt = cntTable[p + "WAPPR"];
+                    if (cntTable.ContainsKey(p + "INPRG"))
+                        ipCnt = cntTable[p + "INPRG"];
+
+                    total = wpCnt + ipCnt;
+
+                    wpTotal += wpCnt;
+                    ipTotal += ipCnt;
+                    bothTotal += total;
+
+                    data.wpCnt = wpCnt.ToString();
+                    data.ipCnt = ipCnt.ToString();
+                    data.total = total.ToString();
+                    if (wpCnt != 0 || ipCnt != 0)
+                        dgSource.Add(data);
                     sumWPCnt += wpCnt;
                     sumIPCnt += ipCnt;
                     sumTotal += total;
@@ -198,18 +267,12 @@ namespace Maximo.AddIns
                 dgSource.Add(dataTotal);
                 dataGrid1.ItemsSource = dgSource;
             }
-           
         }
+
         public void loadData(string reqType="")
         {
-            aboveUrl = serviceUrl.Split(';')[0];
-            underUrl = serviceUrl.Split(';')[1];
-
             QueryTask queryTask;
-            if (reqType=="")
-                queryTask = new QueryTask(underUrl + "/0");
-            else
-                queryTask = new QueryTask(aboveUrl+ "/0");
+            queryTask = new QueryTask(serviceUrl);
 
             queryTask.ExecuteCompleted += QueryTask_ExecuteCompleted;
             queryTask.Failed += QueryTask_Failed;
@@ -222,12 +285,20 @@ namespace Maximo.AddIns
             query.ReturnGeometry = false;
 
             // Return all features
-            query.Where = "1=1";
-
             if (reqType == "")
+            {
+                query.Where = "Department='TO'";
                 queryTask.ExecuteAsync(query, "underground");
-            else
+            }
+            else if (reqType == "above") {
+                query.Where = "Department='TLM' and Section<>'TLM-O&R (EHV)'";
                 queryTask.ExecuteAsync(query, "above");
+            }
+            else if (reqType == "O&R")
+            {
+                query.Where = "Department='TLM' and Section='TLM-O&R (EHV)'";
+                queryTask.ExecuteAsync(query, "O&R");
+            }
         }
 
         private void QueryTask_ExecuteCompleted(object sender, ESRI.ArcGIS.Client.Tasks.QueryEventArgs args)
@@ -263,8 +334,15 @@ namespace Maximo.AddIns
                 populateStore("underground");
                 loadData("above");
             }
-            else
+            else if ((args.UserState as string) == "above")
+            {
                 populateStore("above");
+                loadData("O&R");
+            }
+            else if ((args.UserState as string) == "O&R")
+            {
+                populateStore("O&R");
+            }
 
             Debug.WriteLine("Done");
         }
@@ -273,8 +351,6 @@ namespace Maximo.AddIns
         {
             MessageBox.Show("Query failed: " + args.Error);
         }
-
-
     }
 
     public class Feat
