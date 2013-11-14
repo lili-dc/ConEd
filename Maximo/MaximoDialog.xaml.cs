@@ -41,12 +41,12 @@ namespace Maximo.AddIns
         void myDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
         {
             Data d = e.Row.DataContext as Data;
-            if (d.Section == "UT/EHV" || d.Section == "TLM" || d.Section == "TLM-O&R (EHV)")
+            if (d.Section == "UT/EHV" || d.Section == "TLM" || d.Section == "TLM-O&R" || d.Section == "Total Work Orders")
             {
                 //e.Row.Background = new SolidColorBrush(Colors.LightGray);
                 e.Row.FontWeight = FontWeights.Bold;
             }
-            else if (d.Section == "High Priority Total" || d.Section == "Low Priority Total" || d.Section == "Total")
+            else if (d.Section == "High Priority Total" || d.Section == "Low Priority Total")
             {
                 e.Row.FontWeight = FontWeights.Bold;
                 e.Row.Foreground = new SolidColorBrush(Colors.Red);
@@ -96,7 +96,7 @@ namespace Maximo.AddIns
                     sumWPCnt += wpCnt;
                     sumIPCnt += ipCnt;
                     sumTotal += total;
-                    if (p == "3")
+                    if (p == "3" && (sumWPCnt != 0 || sumIPCnt != 0 || sumTotal != 0))
                     {
                         data = new Data();
                         data.Section = "High Priority Total";
@@ -109,7 +109,7 @@ namespace Maximo.AddIns
                         sumTotal = 0;
                     }
 
-                    if (p == "9")
+                    if (p == "9" && (sumWPCnt != 0 || sumIPCnt != 0 || sumTotal != 0))
                     {
                         data = new Data();
                         data.Section = "Low Priority Total";
@@ -164,7 +164,7 @@ namespace Maximo.AddIns
                     sumWPCnt += wpCnt;
                     sumIPCnt += ipCnt;
                     sumTotal += total;
-                    if (p == "3")
+                    if (p == "3" && (sumWPCnt != 0 || sumIPCnt != 0 || sumTotal != 0))
                     {
                         data = new Data();
                         data.Section = "High Priority Total";
@@ -177,7 +177,7 @@ namespace Maximo.AddIns
                         sumTotal = 0;
                     }
 
-                    if (p == "9")
+                    if (p == "9" && (sumWPCnt != 0 || sumIPCnt != 0 || sumTotal != 0))
                     {
                         data = new Data();
                         data.Section = "Low Priority Total";
@@ -198,7 +198,7 @@ namespace Maximo.AddIns
                 string[] underSections = { "High/Immediate Action Reqd, (i.e. Cat 1/Cat 2/ENV/Safety/SEC)", "Work Requiring Completion within 7 Days", "Completion Within 30 Days (Summer Load Constraints and CMSEA)", "All repetitive work such as Compliances and PMs", "Non-Critical, Follow-up or Non-Emergency Repair/Maint with no Time Constraints", "Not Prioritized" };
 
                 Data data = new Data();
-                data.Section = "TLM-O&R (EHV)";
+                data.Section = "TLM-O&R";
                 dgSource.Add(data);
 
                 int sumWPCnt = 0;
@@ -232,7 +232,7 @@ namespace Maximo.AddIns
                     sumWPCnt += wpCnt;
                     sumIPCnt += ipCnt;
                     sumTotal += total;
-                    if (p == "3")
+                    if (p == "3" && (sumWPCnt != 0 || sumIPCnt != 0 || sumTotal != 0))
                     {
                         data = new Data();
                         data.Section = "High Priority Total";
@@ -245,7 +245,7 @@ namespace Maximo.AddIns
                         sumTotal = 0;
                     }
 
-                    if (p == "9")
+                    if (p == "9" && (sumWPCnt != 0 || sumIPCnt != 0 || sumTotal != 0))
                     {
                         data = new Data();
                         data.Section = "Low Priority Total";
@@ -260,7 +260,7 @@ namespace Maximo.AddIns
                     idx++;
                 }
                 Data dataTotal = new Data();
-                dataTotal.Section = "Total";
+                dataTotal.Section = "Total Work Orders";
                 dataTotal.wpCnt = wpTotal.ToString();
                 dataTotal.ipCnt = ipTotal.ToString();
                 dataTotal.total = bothTotal.ToString();
